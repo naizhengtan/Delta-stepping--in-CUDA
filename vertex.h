@@ -6,8 +6,8 @@
 
 #define MAX_BUKET_NUM 0x7fff
 #define MAX_DISTANCE 0x7fffff
-#define MAX_BUCKET_SIZE 1024
-#define MAX_RESULT_SIZE 1024
+#define MAX_BUCKET_SIZE 2048
+#define MAX_RESULT_SIZE 2048
 
 class cpu{
 public:
@@ -18,10 +18,12 @@ public:
     };
      
     struct vertex{
-        struct edge *edges;
+      //struct edge *edges;
+        int edge_index;
         int dist;
         int pre_vertex;
     };
+
 
     struct gpuResult{
       int index;
@@ -46,17 +48,17 @@ public:
 
     struct vertex *global_vertex;
     struct edge *global_edge;
-    struct vertex *gpu_vertex;
-    struct edge *gpu_edge;
    int vertex_size,edges_size;
    int graph_init;
    int delta;
    bucket bucket_array[MAX_BUKET_NUM];
    int src ,dest;
 //gpu related
+    struct vertex *gpu_vertex;
+    struct edge *gpu_edge;
    int* vertex_buf_ptr;
-   struct gpuResult gpu_result_buf[MAX_RESULT_SIZE];
-
+   struct gpuResult *gpu_result_buf;
+    struct gpuResult *gpu_used_result_buf;
   
 };
 #endif
