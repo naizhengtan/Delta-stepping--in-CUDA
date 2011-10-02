@@ -17,7 +17,7 @@ int main(void){
     //CUT_EXIT();
 }
 
-void gpu_memory_prep(cpu cpu_instance){
+void gpu_memory_prep(cpu &cpu_instance){
      //malloc in GPU
     CUDA_SAFE_CALL(cudaMalloc((void **)&cpu_instance.gpu_vertex,(cpu_instance.vertex_size+2)*sizeof(cpu::vertex)));
     CUDA_SAFE_CALL(cudaMalloc((void**)&cpu_instance.gpu_edge,cpu_instance.edges_size*sizeof(cpu::edge)));
@@ -46,7 +46,7 @@ void gpu_memory_prep(cpu cpu_instance){
     }
 }
 
-void parse_result(cpu cpu_instance,int block){
+void parse_result(cpu &cpu_instance,int block){
      int result_count = 0;
      cpu::gpuResult *current_result = cpu_instance.gpu_result_buf[block];
 

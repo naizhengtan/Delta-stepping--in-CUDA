@@ -25,7 +25,6 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf[],
 
     //one vertex per block
     for (i=bid;i<V_BUF_SIZE;i+=num_block){
-    printf("gpu:%llx\n",gpu_vertex_buf);
 
         if(gpu_vertex_buf[i] == 0)
             return;
@@ -54,6 +53,7 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf[],
 		current_result_buf[result_count].index = dest*flag;
             	current_result_buf[result_count].old_distance = tent_dest*flag;
             	current_result_buf[result_count].new_distance = (tent_current+dist_current)*flag;
+printf("GPU: %d %d %d\n",dest,tent_dest,tent_current+dist_current);
         }
     }
  }
