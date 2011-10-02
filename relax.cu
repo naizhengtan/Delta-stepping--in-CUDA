@@ -8,7 +8,7 @@ get_result(cpu::vertex* gpu_global_vertex,int i){
 }
 
 __global__ void
-relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf[],
+relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
 	       cpu::vertex* gpu_global_vertex, cpu::edge* gpu_global_edge){
 
     const unsigned int bid = blockIdx.x; 
@@ -25,14 +25,13 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf[],
 
     //one vertex per block
     for (i=bid;i<V_BUF_SIZE;i+=num_block){
-    printf("gpu:%llx\n",gpu_vertex_buf);
 
         if(gpu_vertex_buf[i] == 0)
             return;
 
 	//get current vertex's info
         cpu::vertex *temp_v = &gpu_global_vertex[gpu_vertex_buf[i]];
-	cpu::gpuResult *current_result_buf = gpu_used_result_buf[bid]; //the buffer now used
+	cpu::gpuResult *current_result_buf = &gpu_used_result_buf[bid*MAX_RESULT_SIZE]; //the buffer now used
         int num_edges = gpu_global_vertex[gpu_vertex_buf[i]+1].edge_index - temp_v->edge_index;
         int tent_current = temp_v->dist;
 
@@ -54,6 +53,7 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf[],
 		current_result_buf[result_count].index = dest*flag;
             	current_result_buf[result_count].old_distance = tent_dest*flag;
             	current_result_buf[result_count].new_distance = (tent_current+dist_current)*flag;
+printf("GPU: %d %d %d\n",dest,tent_dest,tent_current+dist_current);
         }
     }
  }

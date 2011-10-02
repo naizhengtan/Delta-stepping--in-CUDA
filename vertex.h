@@ -7,7 +7,7 @@
 #define MAX_BUKET_NUM 0x7fff
 #define MAX_DISTANCE 0x7fffff
 #define MAX_BUCKET_SIZE 2048
-#define MAX_RESULT_SIZE 2048
+#define MAX_RESULT_SIZE 1024
 #define NUM_BLOCK 8
 #define V_BUF_SIZE 1024
 
@@ -56,13 +56,15 @@ public:
    //gpu related
     struct vertex *global_vertex;
     struct edge *global_edge;
-    struct gpuResult *gpu_result_buf[NUM_BLOCK];
+    //struct gpuResult *gpu_result_buf[NUM_BLOCK];
+    struct gpuResult *gpu_result_buf;
     int* vertex_buf_ptr;
     //gpu used
     struct vertex *gpu_vertex;
     struct edge *gpu_edge;
     int* gpu_vertex_buf; //mapped memory
-    struct gpuResult *gpu_used_result_buf[NUM_BLOCK];//mapped memory
+    //struct gpuResult *gpu_used_result_buf[NUM_BLOCK];//mapped memory
+    struct gpuResult *gpu_used_result_buf;
   
 };
 #endif
