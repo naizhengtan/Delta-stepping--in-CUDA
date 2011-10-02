@@ -18,7 +18,7 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
     const unsigned int tid_in_grid = blockDim.x * blockIdx.x +threadIdx.x;
 
     int i=0,j=0;
-    int dist_current,dest,tent_dest,flag;
+    int dist_current,dest,tent_dest;
     __shared__ int result_count,lock;
     if(tid_in_block==0){
 	result_count=0;
@@ -32,24 +32,22 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
             return;
 
 	//get current vertex's info
-        cpu::vertex *temp_v = &gpu_global_vertex[gpu_vertex_buf[i]];
+        //cpu::vertex *temp_v = &gpu_global_vertex[gpu_vertex_buf[i]];
+	int edge_index = gpu_global_vertex[gpu_vertex_buf[i]].edge_index;
 	cpu::gpuResult *current_result_buf = &gpu_used_result_buf[bid*MAX_RESULT_SIZE]; //the buffer now used
-        int num_edges = gpu_global_vertex[gpu_vertex_buf[i]+1].edge_index - temp_v->edge_index;
-        int tent_current = temp_v->dist;
+        int num_edges = gpu_global_vertex[gpu_vertex_buf[i]+1].edge_index - edge_index;
+        int tent_current = gpu_global_vertex[gpu_vertex_buf[i]].dist;
 
 	//one edge per thread
         for(j=tid_in_block;j<num_edges;j+=num_thread){
-
 		//get edge's info
-                dist_current = gpu_global_edge[temp_v->edge_index+j].distance;
-                dest = gpu_global_edge[temp_v->edge_index+j].des_v;
+                dist_current = gpu_global_edge[edge_index+j].distance;
+                dest = gpu_global_edge[edge_index+j].des_v;
                 tent_dest = gpu_global_vertex[dest].dist;
 
             if(tent_current + dist_current < tent_dest){
                 gpu_global_vertex[dest].dist = tent_current + dist_current;
-                flag =1;
-            }
-
+                  
 	    //FIXME: bad critical section
 	    int now,loop=0;
 while(loop==0){
@@ -60,12 +58,13 @@ if(atomicExch(&lock,1)==0){
 	    atomicExch(&lock,0);
 	    }
 }
-		current_result_buf[now].index = dest*flag;
-            	current_result_buf[now].old_distance = tent_dest*flag;
-            	current_result_buf[now].new_distance = (tent_current+dist_current)*flag;
-
-printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
+		current_result_buf[now].index = dest;
+            	current_result_buf[now].old_distance = tent_dest;
+            	current_result_buf[now].new_distance = (tent_current+dist_current);
+printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
+//printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
         }
+	}
     }
  }
 

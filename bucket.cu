@@ -1,6 +1,6 @@
-//#include "cutil.h"
 #include "cutil_inline.h"
-//#include "vertex.h"
+#include <map>
+
 //#define DEBUG
 #include "relax.cu"
 #ifdef DEBUG
@@ -40,28 +40,6 @@ void gpu_memory_prep(cpu &cpu_instance){
 
     //initial gpu_used result buffer
     CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
-
-//printf("%llx %llx\n",cpu_instance.vertex_buf_ptr,cpu_instance.gpu_result_buf);
-//       printf("~~%llx %llx %d\n",cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,result_size);
-/*
-    cudaDeviceProp deviceProp;
-    cutilSafeCall(cudaGetDeviceProperties(&deviceProp, cutGetMaxGflopsDeviceId()));
-    if(!deviceProp.canMapHostMemory){
-	printf("Do not support Mapped Memory\n");
-	exit(1);
-    }
-    //alloc mapped memory in cpu
-    int vertex_buf_size = V_BUF_SIZE * sizeof(int);
-    CUDA_SAFE_CALL(cudaHostAlloc((void **)&cpu_instance.vertex_buf_ptr,vertex_buf_size , cudaHostAllocMapped));
-    CUDA_SAFE_CALL(cudaHostGetDevicePointer((void **)&cpu_instance.gpu_vertex_buf, (void *)cpu_instance.vertex_buf_ptr, 0));
-
-    int result_size = MAX_RESULT_SIZE*sizeof(cpu::gpuResult);
-    for(int i=0;i<NUM_BLOCK;i++){
-         CUDA_SAFE_CALL(cudaHostAlloc((void **)&cpu_instance.gpu_result_buf[i],result_size , cudaHostAllocMapped));
-	 CUDA_SAFE_CALL(cudaHostGetDevicePointer((void **)&cpu_instance.gpu_used_result_buf[i],
-	 					        (void *)cpu_instance.gpu_result_buf[i], 0));	 
-    }
-*/
 }
 
 void profile_result(cpu::gpuResult *ptr){
@@ -71,6 +49,7 @@ void profile_result(cpu::gpuResult *ptr){
 
 void parse_result(cpu &cpu_instance){
      int result_count = 0;
+     std::map<int,int> leak;
 
      for(int i=0;i<NUM_BLOCK;i++){
        cpu::gpuResult *current_result = &cpu_instance.gpu_result_buf[i*MAX_RESULT_SIZE];
@@ -83,7 +62,18 @@ void parse_result(cpu &cpu_instance){
                 result_count++;
                 break;//continue;
             }
-
+/*
+std::map<int,int>::iterator it = leak.find(current_result[result_count].index);
+if(it==leak.end())
+	leak.insert(std::pair<int,int>(current_result[result_count].index,current_result[result_count].new_distance));
+else if(current_result[result_count].new_distance < it->second){
+     printf("1:%d %d %d\n",current_result[result_count].index,current_result[result_count].new_distance , it->second);
+     cpu_instance.bucket_array[it->second/cpu_instance.delta].erase(current_result[result_count].index);
+     leak[current_result[result_count].index]=current_result[result_count].new_distance;
+}
+else{printf("2:%d %d %d\n",current_result[result_count].index,current_result[result_count].new_distance , it->second);
+result_count++;continue;}
+*/
             int old_index = current_result[result_count].old_distance / cpu_instance.delta;
             int new_index = current_result[result_count].new_distance / cpu_instance.delta;
             if(current_result[result_count].old_distance != MAX_DISTANCE){
@@ -100,7 +90,7 @@ void cal_shortest_path(){
     int num_threads = 32;
     dim3 dg(num_block, 1, 1);
     dim3 db(num_threads, 1, 1);
-    cpu cpu_instance("hi.gr");
+    cpu cpu_instance("nys.gr");
 
     cudaSetDevice(cutGetMaxGflopsDeviceId());
 
@@ -114,14 +104,14 @@ void cal_shortest_path(){
 
         min = cpu_instance.min_no_empty_bucket();
 
-	//set v set to zero
+	//set v set to zero, clear result buffer
 	memset(cpu_instance.vertex_buf_ptr,0,vertex_buf_size);
+	CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
 
 	//copy&erase vertex in min bucket
         int count = cpu_instance.bucket_set_to_array(min, cpu_instance.vertex_buf_ptr);
-        printf("min: %d  count: %d\n", min,count);
+        //printf("min: %d  count: %d\n", min,count);
 
-getchar();
 	//deploy vertex set to GPU
 	CUDA_SAFE_CALL(cudaMemcpy(cpu_instance.gpu_vertex_buf,cpu_instance.vertex_buf_ptr,
 				vertex_buf_size,cudaMemcpyHostToDevice));
@@ -275,7 +265,6 @@ int cpu::bucket_set_to_array(int index, int* array){
     std::set<int>::iterator it = bucket_array[index].begin();
     for(;it!=bucket_array[index].end();it++){
             array[count]=*it;
-printf("###%d\n",*it);
 	    bucket_array[index].erase(it);
             count++;
 //	    if(count>V_BUF_SIZE){
