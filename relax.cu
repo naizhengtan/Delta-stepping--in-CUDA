@@ -19,9 +19,11 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
 
     int i=0,j=0;
     int dist_current,dest,tent_dest,flag;
-    __shared__ int result_count;
-    if(tid_in_block==0)
+    __shared__ int result_count,lock;
+    if(tid_in_block==0){
 	result_count=0;
+	lock=0;
+    }
 
     //one vertex per block
     for (i=bid;i<V_BUF_SIZE;i+=num_block){
@@ -48,12 +50,21 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
                 flag =1;
             }
 
-	    //FIXME
+	    //FIXME: bad critical section
+	    int now,loop=0;
+while(loop==0){
+if(atomicExch(&lock,1)==0){
+	    now = result_count;
 	    atomicAdd(&result_count,1);
-		current_result_buf[result_count].index = dest*flag;
-            	current_result_buf[result_count].old_distance = tent_dest*flag;
-            	current_result_buf[result_count].new_distance = (tent_current+dist_current)*flag;
-printf("GPU: %d %d %d\n",dest,tent_dest,tent_current+dist_current);
+	    loop=1;
+	    atomicExch(&lock,0);
+	    }
+}
+		current_result_buf[now].index = dest*flag;
+            	current_result_buf[now].old_distance = tent_dest*flag;
+            	current_result_buf[now].new_distance = (tent_current+dist_current)*flag;
+
+printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
         }
     }
  }

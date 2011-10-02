@@ -32,14 +32,17 @@ void gpu_memory_prep(cpu &cpu_instance){
     int vertex_buf_size = V_BUF_SIZE * sizeof(int);
     CUDA_SAFE_CALL(cudaMalloc((void **)&cpu_instance.gpu_vertex_buf,vertex_buf_size));
     int result_size = MAX_RESULT_SIZE * sizeof(cpu::gpuResult)*NUM_BLOCK;
-    CUDA_SAFE_CALL(cudaMalloc((void **)&cpu_instance.gpu_used_result_buf,vertex_buf_size));
+    CUDA_SAFE_CALL(cudaMalloc((void **)&cpu_instance.gpu_used_result_buf,result_size));
 
     //alloc cpu memory
     cpu_instance.vertex_buf_ptr =(int *) malloc(vertex_buf_size);
     cpu_instance.gpu_result_buf =(cpu::gpuResult *) malloc(result_size);
 
-printf("%llx %llx\n",cpu_instance.vertex_buf_ptr,cpu_instance.gpu_result_buf);
-       printf("~~%llx %llx %d\n",cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,result_size);
+    //initial gpu_used result buffer
+    CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
+
+//printf("%llx %llx\n",cpu_instance.vertex_buf_ptr,cpu_instance.gpu_result_buf);
+//       printf("~~%llx %llx %d\n",cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,result_size);
 /*
     cudaDeviceProp deviceProp;
     cutilSafeCall(cudaGetDeviceProperties(&deviceProp, cutGetMaxGflopsDeviceId()));
@@ -61,6 +64,11 @@ printf("%llx %llx\n",cpu_instance.vertex_buf_ptr,cpu_instance.gpu_result_buf);
 */
 }
 
+void profile_result(cpu::gpuResult *ptr){
+     for(int j=0;j<MAX_RESULT_SIZE;j++)
+        printf(" %d ",ptr[j].index);
+}
+
 void parse_result(cpu &cpu_instance){
      int result_count = 0;
 
@@ -74,9 +82,7 @@ void parse_result(cpu &cpu_instance){
             if(current_result[result_count].index == 0){
                 result_count++;
                 break;//continue;
-             }
-
-printf("%d %d %d\n",current_result[result_count].index,current_result[result_count].old_distance,current_result[result_count].new_distance);            
+            }
 
             int old_index = current_result[result_count].old_distance / cpu_instance.delta;
             int new_index = current_result[result_count].new_distance / cpu_instance.delta;
@@ -94,7 +100,7 @@ void cal_shortest_path(){
     int num_threads = 32;
     dim3 dg(num_block, 1, 1);
     dim3 db(num_threads, 1, 1);
-    cpu cpu_instance("nys.gr");
+    cpu cpu_instance("hi.gr");
 
     cudaSetDevice(cutGetMaxGflopsDeviceId());
 
@@ -115,6 +121,7 @@ void cal_shortest_path(){
         int count = cpu_instance.bucket_set_to_array(min, cpu_instance.vertex_buf_ptr);
         printf("min: %d  count: %d\n", min,count);
 
+getchar();
 	//deploy vertex set to GPU
 	CUDA_SAFE_CALL(cudaMemcpy(cpu_instance.gpu_vertex_buf,cpu_instance.vertex_buf_ptr,
 				vertex_buf_size,cudaMemcpyHostToDevice));
@@ -126,8 +133,6 @@ void cal_shortest_path(){
 
        //get the result back
        CUDA_SAFE_CALL(cudaThreadSynchronize());
-       //printf("~o~\n");
-       printf("~~%llx %llx %d\n",cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,result_size);
        CUDA_SAFE_CALL(cudaMemcpy(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
 				result_size,cudaMemcpyDeviceToHost));
 
@@ -270,6 +275,7 @@ int cpu::bucket_set_to_array(int index, int* array){
     std::set<int>::iterator it = bucket_array[index].begin();
     for(;it!=bucket_array[index].end();it++){
             array[count]=*it;
+printf("###%d\n",*it);
 	    bucket_array[index].erase(it);
             count++;
 //	    if(count>V_BUF_SIZE){
@@ -278,8 +284,6 @@ int cpu::bucket_set_to_array(int index, int* array){
 		return count;
 	    }
     }
-    //for(int i=count;i<V_BUF_SIZE;i++)
-    //	    array[i]=0;
     return count;
 }
 
