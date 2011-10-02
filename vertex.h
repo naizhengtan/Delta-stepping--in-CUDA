@@ -8,6 +8,8 @@
 #define MAX_DISTANCE 0x7fffff
 #define MAX_BUCKET_SIZE 2048
 #define MAX_RESULT_SIZE 2048
+#define NUM_BLOCK 8
+#define V_BUF_SIZE 1024
 
 class cpu{
 public:
@@ -45,20 +47,22 @@ public:
     void print_bucket();
 
     int bucket_set_to_array(int index, int* array);
-
-    struct vertex *global_vertex;
-    struct edge *global_edge;
+    //pure cpu parameters
    int vertex_size,edges_size;
    int graph_init;
    int delta;
    bucket bucket_array[MAX_BUKET_NUM];
    int src ,dest;
-//gpu related
+   //gpu related
+    struct vertex *global_vertex;
+    struct edge *global_edge;
+    struct gpuResult *gpu_result_buf[NUM_BLOCK];
+    int* vertex_buf_ptr;
+    //gpu used
     struct vertex *gpu_vertex;
     struct edge *gpu_edge;
-   int* vertex_buf_ptr;
-   struct gpuResult *gpu_result_buf;
-    struct gpuResult *gpu_used_result_buf;
+    int* gpu_vertex_buf; //mapped memory
+    struct gpuResult *gpu_used_result_buf[NUM_BLOCK];//mapped memory
   
 };
 #endif
