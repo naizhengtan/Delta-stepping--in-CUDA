@@ -3,6 +3,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include <set>
+#include <sys/time.h>
 
 #define MAX_BUKET_NUM 0x7fff
 #define MAX_DISTANCE 0x7fffff
@@ -29,6 +30,7 @@ public:
 
     struct gpuResult{
       int index;
+      int pre;
       int old_distance;
       int new_distance;
     };
@@ -65,6 +67,8 @@ public:
     int* gpu_vertex_buf; //mapped memory
     //struct gpuResult *gpu_used_result_buf[NUM_BLOCK];//mapped memory
     struct gpuResult *gpu_used_result_buf;
+    //profile
+    struct timeval start,end;
   
 };
 #endif

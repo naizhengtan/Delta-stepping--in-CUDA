@@ -1,6 +1,5 @@
 #include "cutil_inline.h"
 #include <map>
-#include <sys/time.h>
 
 //#define DEBUG
 #include "relax.cu"
@@ -78,7 +77,7 @@ result_count++;continue;}
         }
      }
 }
-
+    int relax_time =0;
 void cal_shortest_path(cpu &cpu_instance){
 
     int num_block = NUM_BLOCK;
@@ -90,9 +89,12 @@ void cal_shortest_path(cpu &cpu_instance){
     int vertex_buf_size = V_BUF_SIZE * sizeof(int);
     int result_size = MAX_RESULT_SIZE*sizeof(cpu::gpuResult)*NUM_BLOCK;
 
+
    while(!cpu_instance.is_all_bucket_empty()){
 
         min = cpu_instance.min_no_empty_bucket();
+
+
 
 	//set v set to zero, clear result buffer
 	memset(cpu_instance.vertex_buf_ptr,0,vertex_buf_size);
@@ -106,30 +108,43 @@ void cal_shortest_path(cpu &cpu_instance){
 	CUDA_SAFE_CALL(cudaMemcpy(cpu_instance.gpu_vertex_buf,cpu_instance.vertex_buf_ptr,
 				vertex_buf_size,cudaMemcpyHostToDevice));
 
+
+
         //call cuda function
+gettimeofday(&cpu_instance.start,NULL);
         relax_all<<<num_block,num_threads>>>(cpu_instance.gpu_vertex_buf,cpu_instance.gpu_used_result_buf,
                cpu_instance.gpu_vertex,cpu_instance.gpu_edge);
-       //CUT_CHECK_ERROR("Kernel execution failed\n");
 
+       //CUT_CHECK_ERROR("Kernel execution failed\n");
        //get the result back
        CUDA_SAFE_CALL(cudaThreadSynchronize());
+
+
+       verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
+       //CUDA_SAFE_CALL(cudaThreadSynchronize());
+gettimeofday(&cpu_instance.end,NULL);
+
+
        CUDA_SAFE_CALL(cudaMemcpy(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
 				result_size,cudaMemcpyDeviceToHost));
+
+
+relax_time+=(cpu_instance.end.tv_sec*1000000 + cpu_instance.end.tv_usec)-(cpu_instance.start.tv_sec*1000000+cpu_instance.start.tv_usec);
 
        //get the result from gpu
        parse_result(cpu_instance);
        
     }
-    get_result<<<1,1>>>(cpu_instance.gpu_vertex,4);
+    get_result<<<1,1>>>(cpu_instance.gpu_vertex,cpu_instance.dest,cpu_instance.src);
     printf("over\n");
 }
 
 cpu::cpu(char* filepath){
     init_memory(filepath);
-    delta = 0xff;
+    delta = 0xfff;
     src = 1;
     global_vertex[src].dist = 0;
-    dest = 4;
+    dest = 6;
     init_all_bucket();
 }
 
@@ -259,7 +274,7 @@ int cpu::bucket_set_to_array(int index, int* array){
             count++;
 	    if(count>V_BUF_SIZE){
 //	    if(count>NUM_BLOCK){	
-		printf("oops!\n");
+//		printf("oops!\n");
 		return count;
 	    }
     }
@@ -279,6 +294,7 @@ int main(void){
     gettimeofday(&start,NULL);
     cal_shortest_path(cpu_instance);
     gettimeofday(&end,NULL);
-    printf("time cost: %d us\n",(end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec));
+    printf("time cost: %d ms\n",((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec))/1000);
+    printf("relax time cost: %d ms\n",relax_time/1000);
     //CUT_EXIT();
 }
