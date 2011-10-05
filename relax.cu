@@ -44,7 +44,8 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
                 dist_current = gpu_global_edge[edge_index+j].distance;
                 dest = gpu_global_edge[edge_index+j].des_v;
                 tent_dest = gpu_global_vertex[dest].dist;
-
+            if(tent_current + dist_current > MAX_DISTANCE)
+                printf("!!!!!!\n");
             if(tent_current + dist_current < tent_dest){
                 gpu_global_vertex[dest].dist = tent_current + dist_current;
                   
@@ -61,7 +62,7 @@ if(atomicExch(&lock,1)==0){
 		current_result_buf[now].index = dest;
             	current_result_buf[now].old_distance = tent_dest;
             	current_result_buf[now].new_distance = (tent_current+dist_current);
-printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
+//printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
 //printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
         }
 	}

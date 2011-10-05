@@ -1,5 +1,6 @@
 #include "cutil_inline.h"
 #include <map>
+#include <sys/time.h>
 
 //#define DEBUG
 #include "relax.cu"
@@ -9,13 +10,6 @@
 #define dprintf(x...)
 #endif
 
-//shortest path function declaration
-void cal_shortest_path();
-
-int main(void){
-    cal_shortest_path();
-    //CUT_EXIT();
-}
 
 void gpu_memory_prep(cpu &cpu_instance){
      //malloc in GPU
@@ -49,11 +43,11 @@ void profile_result(cpu::gpuResult *ptr){
 
 void parse_result(cpu &cpu_instance){
      int result_count = 0;
-     std::map<int,int> leak;
+     //std::map<int,int> leak;
 
      for(int i=0;i<NUM_BLOCK;i++){
        cpu::gpuResult *current_result = &cpu_instance.gpu_result_buf[i*MAX_RESULT_SIZE];
-
+       result_count=0;
        while(1){
             if(result_count >= MAX_RESULT_SIZE){
                 break;
@@ -85,16 +79,12 @@ result_count++;continue;}
      }
 }
 
-void cal_shortest_path(){
+void cal_shortest_path(cpu &cpu_instance){
+
     int num_block = NUM_BLOCK;
     int num_threads = 32;
     dim3 dg(num_block, 1, 1);
     dim3 db(num_threads, 1, 1);
-    cpu cpu_instance("nys.gr");
-
-    cudaSetDevice(cutGetMaxGflopsDeviceId());
-
-    gpu_memory_prep(cpu_instance);
 
     int min;
     int vertex_buf_size = V_BUF_SIZE * sizeof(int);
@@ -119,7 +109,7 @@ void cal_shortest_path(){
         //call cuda function
         relax_all<<<num_block,num_threads>>>(cpu_instance.gpu_vertex_buf,cpu_instance.gpu_used_result_buf,
                cpu_instance.gpu_vertex,cpu_instance.gpu_edge);
-       CUT_CHECK_ERROR("Kernel execution failed\n");
+       //CUT_CHECK_ERROR("Kernel execution failed\n");
 
        //get the result back
        CUDA_SAFE_CALL(cudaThreadSynchronize());
@@ -132,7 +122,6 @@ void cal_shortest_path(){
     }
     get_result<<<1,1>>>(cpu_instance.gpu_vertex,4);
     printf("over\n");
-    
 }
 
 cpu::cpu(char* filepath){
@@ -145,6 +134,7 @@ cpu::cpu(char* filepath){
 }
 
 cpu::~cpu(){
+
     free(global_vertex);
     free(global_edge);
     free(gpu_result_buf);
@@ -267,8 +257,8 @@ int cpu::bucket_set_to_array(int index, int* array){
             array[count]=*it;
 	    bucket_array[index].erase(it);
             count++;
-//	    if(count>V_BUF_SIZE){
-	    if(count>NUM_BLOCK){	
+	    if(count>V_BUF_SIZE){
+//	    if(count>NUM_BLOCK){	
 		printf("oops!\n");
 		return count;
 	    }
@@ -276,3 +266,19 @@ int cpu::bucket_set_to_array(int index, int* array){
     return count;
 }
 
+
+int main(void){
+    struct timeval start,end;
+
+    cpu cpu_instance("nys.gr");
+
+    cudaSetDevice(cutGetMaxGflopsDeviceId());
+
+    gpu_memory_prep(cpu_instance);
+
+    gettimeofday(&start,NULL);
+    cal_shortest_path(cpu_instance);
+    gettimeofday(&end,NULL);
+    printf("time cost: %d us\n",(end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec));
+    //CUT_EXIT();
+}
