@@ -278,19 +278,22 @@ int cpu::bucket_set_to_array(int index, int* array){
 int main(int argc, char **argv){
     int src_p = 1;
     int dest_p = 6;
-    if(argc != 3){
-        printf("Need two arguments for source and destination!\nDefault Source Point:%d\nDefault Destination Point:%d\n", src_p, dest_p);
+    char* filepath = "nys.gr";
+    if(argc != 4){
+        printf("Need two arguments for source and destination!\nDefault Source Point:%d\nDefault Destination Point:%d\nDefault Map: %s\n",
+                src_p, dest_p, filepath);
     }
     else{
         src_p = atoi(argv[1]);
         dest_p = atoi(argv[2]);
-        printf("Source Point:%d\nDestination Point:%d\n", src_p, dest_p);
+        filepath = argv[3];
+        printf("Source Point:%d\nDestination Point:%d\nMap: %s\n", src_p, dest_p, filepath);
     }
     
     struct timeval start,end;
 
 
-    cpu cpu_instance("nys.gr", src_p, dest_p);
+    cpu cpu_instance(filepath, src_p, dest_p);
 
     cudaSetDevice(cutGetMaxGflopsDeviceId());
 
