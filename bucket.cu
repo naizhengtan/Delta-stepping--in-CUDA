@@ -55,18 +55,6 @@ void parse_result(cpu &cpu_instance){
                 result_count++;
                 break;//continue;
             }
-/*
-std::map<int,int>::iterator it = leak.find(current_result[result_count].index);
-if(it==leak.end())
-	leak.insert(std::pair<int,int>(current_result[result_count].index,current_result[result_count].new_distance));
-else if(current_result[result_count].new_distance < it->second){
-     printf("1:%d %d %d\n",current_result[result_count].index,current_result[result_count].new_distance , it->second);
-     cpu_instance.bucket_array[it->second/cpu_instance.delta].erase(current_result[result_count].index);
-     leak[current_result[result_count].index]=current_result[result_count].new_distance;
-}
-else{printf("2:%d %d %d\n",current_result[result_count].index,current_result[result_count].new_distance , it->second);
-result_count++;continue;}
-*/
             int old_index = current_result[result_count].old_distance / cpu_instance.delta;
             int new_index = current_result[result_count].new_distance / cpu_instance.delta;
             if(current_result[result_count].old_distance != MAX_DISTANCE){
@@ -96,55 +84,55 @@ void cal_shortest_path(cpu &cpu_instance){
 
 
 
-	//set v set to zero, clear result buffer
-	memset(cpu_instance.vertex_buf_ptr,0,vertex_buf_size);
-	CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
+	    memset(cpu_instance.vertex_buf_ptr,0,vertex_buf_size);
+	    CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
 
-	//copy&erase vertex in min bucket
+	    //copy&erase vertex in min bucket
         int count = cpu_instance.bucket_set_to_array(min, cpu_instance.vertex_buf_ptr);
         //printf("min: %d  count: %d\n", min,count);
 
-	//deploy vertex set to GPU
-	CUDA_SAFE_CALL(cudaMemcpy(cpu_instance.gpu_vertex_buf,cpu_instance.vertex_buf_ptr,
+	    //set v set to zero, clear result buffer
+	    //deploy vertex set to GPU
+	    CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_vertex_buf,cpu_instance.vertex_buf_ptr,
 				vertex_buf_size,cudaMemcpyHostToDevice));
 
 
 
+
         //call cuda function
-gettimeofday(&cpu_instance.start,NULL);
         relax_all<<<num_block,num_threads>>>(cpu_instance.gpu_vertex_buf,cpu_instance.gpu_used_result_buf,
                cpu_instance.gpu_vertex,cpu_instance.gpu_edge);
 
-       //CUT_CHECK_ERROR("Kernel execution failed\n");
-       //get the result back
-       CUDA_SAFE_CALL(cudaThreadSynchronize());
+        //CUT_CHECK_ERROR("Kernel execution failed\n");
+        //get the result back
+        //CUDA_SAFE_CALL(cudaThreadSynchronize());
 
 
-       verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
-       //CUDA_SAFE_CALL(cudaThreadSynchronize());
-gettimeofday(&cpu_instance.end,NULL);
+        verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
+        //CUDA_SAFE_CALL(cudaThreadSynchronize());
 
-
-       CUDA_SAFE_CALL(cudaMemcpy(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
+        gettimeofday(&cpu_instance.start,NULL);
+        CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
 				result_size,cudaMemcpyDeviceToHost));
 
 
-relax_time+=(cpu_instance.end.tv_sec*1000000 + cpu_instance.end.tv_usec)-(cpu_instance.start.tv_sec*1000000+cpu_instance.start.tv_usec);
+        gettimeofday(&cpu_instance.end,NULL);
+        relax_time+=(cpu_instance.end.tv_sec*1000000 + cpu_instance.end.tv_usec)-(cpu_instance.start.tv_sec*1000000+cpu_instance.start.tv_usec);
 
-       //get the result from gpu
-       parse_result(cpu_instance);
+        //get the result from gpu
+        parse_result(cpu_instance);
        
     }
     get_result<<<1,1>>>(cpu_instance.gpu_vertex,cpu_instance.dest,cpu_instance.src);
     printf("over\n");
 }
 
-cpu::cpu(char* filepath){
+cpu::cpu(char* filepath, int src_p, int dest_p){
     init_memory(filepath);
-    delta = 0xfff;
-    src = 1;
+    delta = 0x1fff;
+    src = src_p;
     global_vertex[src].dist = 0;
-    dest = 6;
+    dest = dest_p;
     init_all_bucket();
 }
 
@@ -282,10 +270,22 @@ int cpu::bucket_set_to_array(int index, int* array){
 }
 
 
-int main(void){
+int main(int argc, char **argv){
+    int src_p = 1;
+    int dest_p = 6;
+    if(argc != 3){
+        printf("Need two arguments for source and destination!\nDefault Source Point:%d\nDefault Destination Point:%d\n", src_p, dest_p);
+    }
+    else{
+        src_p = atoi(argv[1]);
+        dest_p = atoi(argv[2]);
+        printf("Source Point:%d\nDestination Point:%d\n", src_p, dest_p);
+    }
+    
     struct timeval start,end;
 
-    cpu cpu_instance("nys.gr");
+
+    cpu cpu_instance("USA.gr", src_p, dest_p);
 
     cudaSetDevice(cutGetMaxGflopsDeviceId());
 

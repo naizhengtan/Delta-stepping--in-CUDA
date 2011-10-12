@@ -5,11 +5,11 @@
 #include <set>
 #include <sys/time.h>
 
-#define MAX_BUKET_NUM 0x7fff
-#define MAX_DISTANCE 0x7fffff
+#define MAX_BUKET_NUM 0x7fff//0x7fff
+#define MAX_DISTANCE 0x7ffffff//0x7fffff
 #define MAX_BUCKET_SIZE 2048
-#define MAX_RESULT_SIZE 1024
-#define NUM_BLOCK 8
+#define MAX_RESULT_SIZE 1024 //1024
+#define NUM_BLOCK 12
 #define V_BUF_SIZE 1024
 
 class cpu{
@@ -38,7 +38,7 @@ public:
 
     typedef std::set<int> bucket;
 
-    cpu(char*);
+    cpu(char*, int, int);
     ~cpu();
     int init_all_bucket();//OK
     int is_all_bucket_empty();
