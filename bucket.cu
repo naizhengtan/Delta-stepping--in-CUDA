@@ -78,7 +78,6 @@ void cal_shortest_path(cpu &cpu_instance){
     int vertex_buf_size = V_BUF_SIZE * sizeof(int);
     int result_size = MAX_RESULT_SIZE*sizeof(cpu::gpuResult)*NUM_BLOCK;
 
-
    while(!cpu_instance.is_all_bucket_empty()){
 
         min = cpu_instance.min_no_empty_bucket();
@@ -113,7 +112,7 @@ gettimeofday(&cpu_instance.start,NULL);
         //CUDA_SAFE_CALL(cudaThreadSynchronize());
 
 
-        verify_result<<<1,NUM_BLOCK*2>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
+        verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
 
 gettimeofday(&cpu_instance.start_copy_back,NULL);
         CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
@@ -134,7 +133,7 @@ gettimeofday(&cpu_instance.end,NULL);
 
 cpu::cpu(char* filepath, int src_p, int dest_p){
     init_memory(filepath);
-    delta = 0x1fff;
+    delta = 0xffff;
     src = src_p;
     global_vertex[src].dist = 0;
     dest = dest_p;
@@ -280,7 +279,7 @@ int main(int argc, char **argv){
     int dest_p = 6;
     char* filepath = "nys.gr";
     if(argc != 4){
-        printf("Need two arguments for source and destination!\nDefault Source Point:%d\nDefault Destination Point:%d\nDefault Map: %s\n",
+        printf("Need three arguments for source, destination and map!\nDefault Source Point:%d\nDefault Destination Point:%d\nDefault Map: %s\n",
                 src_p, dest_p, filepath);
     }
     else{
@@ -290,19 +289,22 @@ int main(int argc, char **argv){
         printf("Source Point:%d\nDestination Point:%d\nMap: %s\n", src_p, dest_p, filepath);
     }
     
-    struct timeval start,end;
+    struct timeval start,end,total_start,total_end;
+gettimeofday(&total_start,NULL);
 
-
+    //CUT_DEVICE_INIT(argc, argv);
+    //cudaSetDevice(cutGetMaxGflopsDeviceId());
     cpu cpu_instance(filepath, src_p, dest_p);
 
-    cudaSetDevice(cutGetMaxGflopsDeviceId());
 
     gpu_memory_prep(cpu_instance);
 
-    gettimeofday(&start,NULL);
+gettimeofday(&start,NULL);
     cal_shortest_path(cpu_instance);
-    gettimeofday(&end,NULL);
-    printf("time cost: %d ms\n",((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec))/1000);
+gettimeofday(&total_end,NULL);
+gettimeofday(&end,NULL);
+    printf("total time cost: %d ms\n",((total_end.tv_sec*1000000+total_end.tv_usec)-(total_start.tv_sec*1000000+total_start.tv_usec))/1000);
+    printf("delta stepping time cost: %d ms\n",((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec))/1000);
     printf("relax time cost: %d ms\n",relax_time/1000);
     printf("copy back time cost: %d ms\n", copy_back_time/1000);
     //CUT_EXIT();

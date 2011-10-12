@@ -21,7 +21,7 @@ const unsigned int tid = threadIdx.x;
 
 //    for(int i=0;i<NUM_BLOCK;i++){
        int count=0;
-       cpu::gpuResult* current = &gpu_result[tid*MAX_RESULT_SIZE/2];
+       cpu::gpuResult* current = &gpu_result[tid*MAX_RESULT_SIZE];
        while(1){
        if(current[count].index==0)
           break;
