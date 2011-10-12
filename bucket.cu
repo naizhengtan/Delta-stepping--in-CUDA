@@ -134,7 +134,7 @@ gettimeofday(&cpu_instance.end,NULL);
 
 cpu::cpu(char* filepath, int src_p, int dest_p){
     init_memory(filepath);
-    delta = 0xfff;
+    delta = 0x1fff;
     src = src_p;
     global_vertex[src].dist = 0;
     dest = dest_p;
