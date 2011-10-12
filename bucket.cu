@@ -66,6 +66,7 @@ void parse_result(cpu &cpu_instance){
      }
 }
     int relax_time =0;
+    int copy_back_time = 0;
 void cal_shortest_path(cpu &cpu_instance){
 
     int num_block = NUM_BLOCK;
@@ -100,25 +101,29 @@ void cal_shortest_path(cpu &cpu_instance){
 
 
         //call cuda function
-        relax_all<<<num_block,num_threads>>>(cpu_instance.gpu_vertex_buf,cpu_instance.gpu_used_result_buf,
-               cpu_instance.gpu_vertex,cpu_instance.gpu_edge);
+        //relax_all<<<num_block,num_threads>>>(cpu_instance.gpu_vertex_buf,cpu_instance.gpu_used_result_buf,
+        //       cpu_instance.gpu_vertex,cpu_instance.gpu_edge);
 
+
+gettimeofday(&cpu_instance.start,NULL);
+        relax_all<<<num_block,256>>>(cpu_instance.gpu_vertex_buf,cpu_instance.gpu_used_result_buf,
+               cpu_instance.gpu_vertex,cpu_instance.gpu_edge);
         //CUT_CHECK_ERROR("Kernel execution failed\n");
         //get the result back
         //CUDA_SAFE_CALL(cudaThreadSynchronize());
 
 
-        verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
-        //CUDA_SAFE_CALL(cudaThreadSynchronize());
+        verify_result<<<1,NUM_BLOCK*2>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
 
-        gettimeofday(&cpu_instance.start,NULL);
+gettimeofday(&cpu_instance.start_copy_back,NULL);
         CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
 				result_size,cudaMemcpyDeviceToHost));
+gettimeofday(&cpu_instance.end_copy_back,NULL);
 
-
-        gettimeofday(&cpu_instance.end,NULL);
+gettimeofday(&cpu_instance.end,NULL);
         relax_time+=(cpu_instance.end.tv_sec*1000000 + cpu_instance.end.tv_usec)-(cpu_instance.start.tv_sec*1000000+cpu_instance.start.tv_usec);
-
+        copy_back_time+=(cpu_instance.end_copy_back.tv_sec*1000000 +
+                cpu_instance.end_copy_back.tv_usec)-(cpu_instance.start_copy_back.tv_sec*1000000+cpu_instance.start_copy_back.tv_usec);
         //get the result from gpu
         parse_result(cpu_instance);
        
@@ -285,7 +290,7 @@ int main(int argc, char **argv){
     struct timeval start,end;
 
 
-    cpu cpu_instance("USA.gr", src_p, dest_p);
+    cpu cpu_instance("nys.gr", src_p, dest_p);
 
     cudaSetDevice(cutGetMaxGflopsDeviceId());
 
@@ -296,5 +301,6 @@ int main(int argc, char **argv){
     gettimeofday(&end,NULL);
     printf("time cost: %d ms\n",((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec))/1000);
     printf("relax time cost: %d ms\n",relax_time/1000);
+    printf("copy back time cost: %d ms\n", copy_back_time/1000);
     //CUT_EXIT();
 }

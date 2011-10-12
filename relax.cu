@@ -21,7 +21,7 @@ const unsigned int tid = threadIdx.x;
 
 //    for(int i=0;i<NUM_BLOCK;i++){
        int count=0;
-       cpu::gpuResult* current = &gpu_result[tid*MAX_RESULT_SIZE];
+       cpu::gpuResult* current = &gpu_result[tid*MAX_RESULT_SIZE/2];
        while(1){
        if(current[count].index==0)
           break;
@@ -73,8 +73,8 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
                 dest = gpu_global_edge[edge_index+j].des_v;
                 tent_dest = gpu_global_vertex[dest].dist;
 
-            if(tent_current + dist_current > MAX_DISTANCE)
-                printf("DISTANCE BOOM\n");
+            //if(tent_current + dist_current > MAX_DISTANCE)
+                //printf("DISTANCE BOOM\n");
 
             if(tent_current + dist_current < gpu_global_vertex[dest].dist){
                 gpu_global_vertex[dest].dist = tent_current + dist_current;

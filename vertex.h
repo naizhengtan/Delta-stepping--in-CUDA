@@ -8,8 +8,8 @@
 #define MAX_BUKET_NUM 0x7fff//0x7fff
 #define MAX_DISTANCE 0x7ffffff//0x7fffff
 #define MAX_BUCKET_SIZE 2048
-#define MAX_RESULT_SIZE 1024 //1024
-#define NUM_BLOCK 12
+#define MAX_RESULT_SIZE 16//1024
+#define NUM_BLOCK 32
 #define V_BUF_SIZE 1024
 
 class cpu{
@@ -68,7 +68,7 @@ public:
     //struct gpuResult *gpu_used_result_buf[NUM_BLOCK];//mapped memory
     struct gpuResult *gpu_used_result_buf;
     //profile
-    struct timeval start,end;
+    struct timeval start,end,start_copy_back,end_copy_back;
   
 };
 #endif
