@@ -133,7 +133,7 @@ gettimeofday(&cpu_instance.end,NULL);
 
 cpu::cpu(char* filepath, int src_p, int dest_p){
     init_memory(filepath);
-    delta = 0xffff;
+    delta = 0x1fff;
     src = src_p;
     global_vertex[src].dist = 0;
     dest = dest_p;
@@ -179,8 +179,10 @@ int cpu::init_memory(char* filepath){
   char string[256];
 
   FILE* fp = fopen(filepath,"r");
-  if(fp==NULL)
+  if(fp==NULL){
+    printf("file not exist!\n");
     return -1;
+  }
 
   //init edge, file staff
   while(fgets(string,256,fp)!=NULL){
@@ -305,7 +307,7 @@ gettimeofday(&total_end,NULL);
 gettimeofday(&end,NULL);
     printf("total time cost: %d ms\n",((total_end.tv_sec*1000000+total_end.tv_usec)-(total_start.tv_sec*1000000+total_start.tv_usec))/1000);
     printf("delta stepping time cost: %d ms\n",((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec))/1000);
-    printf("relax time cost: %d ms\n",relax_time/1000);
-    printf("copy back time cost: %d ms\n", copy_back_time/1000);
+    //printf("relax time cost: %d ms\n",relax_time/1000);
+    //printf("copy back time cost: %d ms\n", copy_back_time/1000);
     //CUT_EXIT();
 }
