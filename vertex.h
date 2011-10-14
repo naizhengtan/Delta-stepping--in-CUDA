@@ -5,10 +5,10 @@
 #include <set>
 #include <sys/time.h>
 
-#define MAX_BUKET_NUM 0x7fff//0x7fff
+#define MAX_BUKET_NUM 0x800//0x7fff
 #define MAX_DISTANCE 0x7fffff//0x7fffff
 #define MAX_BUCKET_SIZE 2048
-#define MAX_RESULT_SIZE 512//1024
+#define MAX_RESULT_SIZE 1024//1024
 #define NUM_BLOCK 12
 #define V_BUF_SIZE 1024
 
@@ -67,6 +67,7 @@ public:
     int* gpu_vertex_buf; //mapped memory
     //struct gpuResult *gpu_used_result_buf[NUM_BLOCK];//mapped memory
     struct gpuResult *gpu_used_result_buf;
+    struct gpuResult *mapped_gpu_result_buf;
     //profile
     struct timeval start,end,start_copy_back,end_copy_back;
   

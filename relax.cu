@@ -7,17 +7,17 @@ get_result(cpu::vertex* gpu_global_vertex,int des,int src){
 	printf("result: %d\n",gpu_global_vertex[des].dist);	
 	int pre = gpu_global_vertex[des].pre_vertex;
 	printf("(%d,%d)",des,gpu_global_vertex[des].dist);
-	while(pre != src){
+/*	while(pre != src){
 	   printf(" <- (%d,%d)",pre,gpu_global_vertex[pre].dist);
 	   pre = gpu_global_vertex[pre].pre_vertex;
 	}
-	printf(" <- (%d,%d)\n",src,gpu_global_vertex[src].dist);
+	printf(" <- (%d,%d)\n",src,gpu_global_vertex[src].dist);*/
 }
 
 __global__ void
 verify_result(cpu::vertex* gpu_global_vertex,cpu::gpuResult *gpu_result){
 
-const unsigned int tid = threadIdx.x;
+    const unsigned int tid = threadIdx.x;
 
 //    for(int i=0;i<NUM_BLOCK;i++){
        int count=0;
@@ -26,9 +26,9 @@ const unsigned int tid = threadIdx.x;
        if(current[count].index==0)
           break;
        	  if(current[count].new_distance<gpu_global_vertex[current[count].index].dist){
-//	  	printf("!!!!\n");
-		gpu_global_vertex[current[count].index].dist = current[count].new_distance;
-		gpu_global_vertex[current[count].index].pre_vertex = current[count].pre;
+	  	    printf("VERIFY!!!!\n");
+		    gpu_global_vertex[current[count].index].dist = current[count].new_distance;
+		    gpu_global_vertex[current[count].index].pre_vertex = current[count].pre;
        	  }
        count++;
        }
@@ -69,36 +69,34 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
 	//one edge per thread
         for(j=tid_in_block;j<num_edges;j+=num_thread){
 		//get edge's info
-                dist_current = gpu_global_edge[edge_index+j].distance;
-                dest = gpu_global_edge[edge_index+j].des_v;
-                tent_dest = gpu_global_vertex[dest].dist;
+            dist_current = gpu_global_edge[edge_index+j].distance;
+            dest = gpu_global_edge[edge_index+j].des_v;
+            tent_dest = gpu_global_vertex[dest].dist;
 
             //if(tent_current + dist_current > MAX_DISTANCE)
                 //printf("DISTANCE BOOM\n");
 
             if(tent_current + dist_current < gpu_global_vertex[dest].dist){
                 gpu_global_vertex[dest].dist = tent_current + dist_current;
-		gpu_global_vertex[dest].pre_vertex = gpu_vertex_buf[i];
+		        gpu_global_vertex[dest].pre_vertex = gpu_vertex_buf[i];
                   
-	    //FIXME: bad critical section
-	    int now,loop=0;
+	            //FIXME: bad critical section
+        	    int now,loop=0;
 
-while(loop==0){
-if(atomicExch(&lock,1)==0){
-	    now = result_count;
-	    atomicAdd(&result_count,1);
-	    loop=1;
-	    atomicExch(&lock,0);
-	    }
-}
-		current_result_buf[now].index = dest;
+                while(loop==0){
+                    if(atomicExch(&lock,1)==0){
+            	        now = result_count;
+            	        atomicAdd(&result_count,1);
+                	    loop=1;
+                	    atomicExch(&lock,0);
+        	        }
+                }
+        		current_result_buf[now].index = dest;
             	current_result_buf[now].old_distance = tent_dest;
             	current_result_buf[now].new_distance = (tent_current+dist_current);
-		current_result_buf[now].pre = gpu_vertex_buf[i];
-//if(result_count>=MAX_RESULT_SIZE)
-//	printf("!!!!\n");
-//printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
-//printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
+		        current_result_buf[now].pre = gpu_vertex_buf[i];
+                printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
+                printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
         }
 	}
     }
