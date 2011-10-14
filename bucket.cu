@@ -96,13 +96,14 @@ void cal_shortest_path(cpu &cpu_instance){
 
 
 	    memset(cpu_instance.vertex_buf_ptr,0,vertex_buf_size);
+        memset(cpu_instance.gpu_result_buf,0,result_size);
 	    CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
-        getchar();
+        //getchar();
 	    //copy&erase vertex in min bucket
         int count = cpu_instance.bucket_set_to_array(min, cpu_instance.vertex_buf_ptr);
-        for(int i = 0; i < count; i++)
-            printf("%d  ",cpu_instance.vertex_buf_ptr[i]);
-        printf("min: %d  count: %d\n", min,count);
+        //for(int i = 0; i < count; i++)
+        //    printf("%d  ",cpu_instance.vertex_buf_ptr[i]);
+        //printf("min: %d  count: %d\n", min,count);
 
 	    //set v set to zero, clear result buffer
 	    //deploy vertex set to GPU
@@ -124,10 +125,10 @@ gettimeofday(&cpu_instance.start,NULL);
         //get the result back
         //CUDA_SAFE_CALL(cudaThreadSynchronize());
 
-        profile_result(cpu_instance.gpu_result_buf);
-        //verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.mapped_gpu_result_buf);
-        printf("\n++++++++++++\n\n\n\n\n\n");
-        //CUDA_SAFE_CALL(cudaThreadSynchronize());
+        //profile_result(cpu_instance.gpu_result_buf);
+        verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.mapped_gpu_result_buf);
+        //printf("\n++++++++++++\n\n\n\n\n\n");
+        CUDA_SAFE_CALL(cudaThreadSynchronize());
 
 //gettimeofday(&cpu_instance.start_copy_back,NULL);
         //CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
@@ -323,7 +324,7 @@ gettimeofday(&total_end,NULL);
 gettimeofday(&end,NULL);
     printf("total time cost: %d ms\n",((total_end.tv_sec*1000000+total_end.tv_usec)-(total_start.tv_sec*1000000+total_start.tv_usec))/1000);
     printf("delta stepping time cost: %d ms\n",((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec))/1000);
-    //printf("relax time cost: %d ms\n",relax_time/1000);
+    printf("relax time cost: %d ms\n",relax_time/1000);
     //printf("copy back time cost: %d ms\n", copy_back_time/1000);
     //CUT_EXIT();
 }
