@@ -96,7 +96,7 @@ if(atomicExch(&lock,1)==0){
             	current_result_buf[now].new_distance = (tent_current+dist_current);
 		current_result_buf[now].pre = gpu_vertex_buf[i];
 //if(result_count>=MAX_RESULT_SIZE)
-//	printf("!!!!\n");
+//	printf("OVERFLOW!!!!%d\n", result_count);
 //printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
 //printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
         }
