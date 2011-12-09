@@ -12,6 +12,8 @@
 #define NUM_BLOCK 16
 #define V_BUF_SIZE 1024
 
+#define SET_MAX_ELEMENT 300000
+
 class cpu{
 public:
 
@@ -33,6 +35,10 @@ public:
       int pre;
       int old_distance;
       int new_distance;
+    };
+
+    struct gpuSet{
+        int index[SET_MAX_ELEMENT];
     };
 
 
@@ -67,6 +73,7 @@ public:
     int* gpu_vertex_buf; //mapped memory
     //struct gpuResult *gpu_used_result_buf[NUM_BLOCK];//mapped memory
     struct gpuResult *gpu_used_result_buf;
+    struct gpuSet *gpu_used_set;
     //profile
     struct timeval start,end,start_copy_back,end_copy_back;
   

@@ -27,12 +27,18 @@ void gpu_memory_prep(cpu &cpu_instance){
     int result_size = MAX_RESULT_SIZE * sizeof(cpu::gpuResult)*NUM_BLOCK;
     CUDA_SAFE_CALL(cudaMalloc((void **)&cpu_instance.gpu_used_result_buf,result_size));
 
+    int gpu_set_size = MAX_BUKET_NUM * sizeof(cpu::gpuSet);
+    printf("%d\n", gpu_set_size);
+    CUDA_SAFE_CALL(cudaMalloc((void **)&cpu_instance.gpu_used_set, gpu_set_size));
     //alloc cpu memory
     cpu_instance.vertex_buf_ptr =(int *) malloc(vertex_buf_size);
     cpu_instance.gpu_result_buf =(cpu::gpuResult *) malloc(result_size);
 
     //initial gpu_used result buffer
     CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
+
+    //initial gpu set
+    CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_set,0,gpu_set_size));
 }
 
 void profile_result(cpu::gpuResult *ptr){
@@ -77,24 +83,34 @@ void cal_shortest_path(cpu &cpu_instance){
     int min;
     int vertex_buf_size = V_BUF_SIZE * sizeof(int);
     int result_size = MAX_RESULT_SIZE*sizeof(cpu::gpuResult)*NUM_BLOCK;
+    int* return_v;
+    int* d_return_v;
+    CUDA_SAFE_CALL(cudaHostAlloc((void **)&return_v,sizeof(int),
+                cudaHostAllocMapped));
+    CUDA_SAFE_CALL(cudaHostGetDevicePointer((void **)&d_return_v, (void
+                    *)return_v, 0));
+    insert_src<<<1, 1>>>(cpu_instance.gpu_used_set, cpu_instance.src);
+   while(1){
+        //printf("entering while\n");
+        min_bucket<<<1, 1>>>(cpu_instance.gpu_vertex_buf, cpu_instance.gpu_used_set, d_return_v);
+        if(*return_v == SET_MAX_ELEMENT)
+            break;
+        //printf("%d\n", *return_v);
+        //min = cpu_instance.min_no_empty_bucket();
 
-   while(!cpu_instance.is_all_bucket_empty()){
-
-        min = cpu_instance.min_no_empty_bucket();
 
 
-
-	    memset(cpu_instance.vertex_buf_ptr,0,vertex_buf_size);
-	    CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
+	    //memset(cpu_instance.vertex_buf_ptr,0,vertex_buf_size);
+	    //CUDA_SAFE_CALL(cudaMemset(cpu_instance.gpu_used_result_buf,0,result_size));
 
 	    //copy&erase vertex in min bucket
-        int count = cpu_instance.bucket_set_to_array(min, cpu_instance.vertex_buf_ptr);
+        //int count = cpu_instance.bucket_set_to_array(min, cpu_instance.vertex_buf_ptr);
         //printf("min: %d  count: %d\n", min,count);
 
 	    //set v set to zero, clear result buffer
 	    //deploy vertex set to GPU
-	    CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_vertex_buf,cpu_instance.vertex_buf_ptr,
-				vertex_buf_size,cudaMemcpyHostToDevice));
+	    //CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_vertex_buf,cpu_instance.vertex_buf_ptr,
+		//		vertex_buf_size,cudaMemcpyHostToDevice));
 
 
 
@@ -113,10 +129,11 @@ gettimeofday(&cpu_instance.start,NULL);
 
 
         verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
-
+        bucket_ops<<<1,NUM_BLOCK>>>(cpu_instance.gpu_used_result_buf,
+                cpu_instance.gpu_used_set, cpu_instance.delta);
 gettimeofday(&cpu_instance.start_copy_back,NULL);
-        CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
-				result_size,cudaMemcpyDeviceToHost));
+        //CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
+		//		result_size,cudaMemcpyDeviceToHost));
 gettimeofday(&cpu_instance.end_copy_back,NULL);
 
 gettimeofday(&cpu_instance.end,NULL);
@@ -124,7 +141,7 @@ gettimeofday(&cpu_instance.end,NULL);
         copy_back_time+=(cpu_instance.end_copy_back.tv_sec*1000000 +
                 cpu_instance.end_copy_back.tv_usec)-(cpu_instance.start_copy_back.tv_sec*1000000+cpu_instance.start_copy_back.tv_usec);
         //get the result from gpu
-        parse_result(cpu_instance);
+        //parse_result(cpu_instance);
        
     }
     get_result<<<1,1>>>(cpu_instance.gpu_vertex,cpu_instance.dest,cpu_instance.src);
