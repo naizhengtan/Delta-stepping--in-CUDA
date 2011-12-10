@@ -7,12 +7,12 @@
 
 #define MAX_BUKET_NUM 0x7fff//0x7fff
 #define MAX_DISTANCE 0x7fffff//0x7fffff
-#define MAX_BUCKET_SIZE 2048
+#define MAX_BUCKET_SIZE 20//2048
 #define MAX_RESULT_SIZE 108//1024
 #define NUM_BLOCK 16
 #define V_BUF_SIZE 1024
 
-#define SET_MAX_ELEMENT 300000
+#define SET_MAX_ELEMENT 30
 
 class cpu{
 public:

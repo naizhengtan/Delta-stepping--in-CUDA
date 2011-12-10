@@ -32,6 +32,7 @@ const unsigned int tid = threadIdx.x;
        	  }
        count++;
        }
+        printf("verify count: %d\n", count);
 //    }
 }
 
@@ -42,15 +43,25 @@ insert_src(cpu::gpuSet *gpu_used_set, int src){
     printf("INSERT\n");
 }
 
+
+
 __global__ void
 bucket_ops(cpu::gpuResult *gpu_result, cpu::gpuSet *gpu_used_set, int delta){
-    printf("hello world\n");
     const unsigned int tid = threadIdx.x;
     int count = 0;
     cpu::gpuResult* current = &gpu_result[tid*MAX_RESULT_SIZE];
+    int old_bucket, new_bucket, old_bucket_count, new_bucket_count;
     while(1){
-        if(current[count].index==0)
+        old_bucket = current[count].old_distance/delta;
+        if(old_bucket >= MAX_BUCKET_SIZE)
+            old_bucket = MAX_BUCKET_SIZE - 1;
+        new_bucket = current[count].new_distance/delta;
+        printf("!!!%d, %d, %d, %d\n", delta, current[count].old_distance, old_bucket, new_bucket);
+        if(current[count].index==0 || count >= MAX_RESULT_SIZE)
             break;
+        old_bucket_count = gpu_used_set[old_bucket].index[SET_MAX_ELEMENT - 1];
+        new_bucket_count = gpu_used_set[new_bucket].index[SET_MAX_ELEMENT - 1];
+        //printf("%d, %d\n", old_bucket_count, new_bucket_count);
         gpu_used_set[current[count].old_distance/delta].index[SET_MAX_ELEMENT - 1] -=
             gpu_used_set[current[count].old_distance/delta].index[current[count].index];
         gpu_used_set[current[count].new_distance/delta].index[SET_MAX_ELEMENT - 1] +=
@@ -102,7 +113,7 @@ relax_all(int* gpu_vertex_buf, cpu::gpuResult* gpu_used_result_buf,
 	result_count=0;
 	lock=0;
     }
-
+    //printf("relax start\n");
     //one vertex per block
     for (i=bid;i<V_BUF_SIZE;i+=num_block){
 
@@ -148,7 +159,7 @@ if(atomicExch(&lock,1)==0){
 //if(result_count>=MAX_RESULT_SIZE)
 //	printf("OVERFLOW!!!!%d\n", result_count);
 //printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
-//printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
+printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
         }
 	}
     }
