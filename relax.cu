@@ -35,26 +35,27 @@ const unsigned int tid = threadIdx.x;
 
 __global__ void
 bucket_ops(cpu::gpuResult *gpu_result, cpu::gpuSet *gpu_set, int delta){
-    for(int i = 0; i < NUM_BLOCK; i++){
+const unsigned int tid = threadIdx.x;
+    //for(int i = 0; i < NUM_BLOCK; i++){
         int count = 0;
-        cpu::gpuResult *current = &gpu_result[i * MAX_RESULT_SIZE];
+        cpu::gpuResult *current = &gpu_result[tid * MAX_RESULT_SIZE];
         while(1){
             if(current[count].index == 0){
                 break;
             }
-            printf("!!!%d\n", current[count].index);
+            //printf("!!!%d\n", current[count].index);
             int old_bucket = current[count].old_distance / delta;
             if(old_bucket >= MAX_BUKET_NUM)
                 old_bucket = MAX_BUKET_NUM - 1;
             int new_bucket = current[count].new_distance / delta;
-            printf("i: %d, old b: %d, new b: %d\n", i, old_bucket, new_bucket);
+            //printf("i: %d, old b: %d, new b: %d\n", i, old_bucket, new_bucket);
             //remove
             int old_bucket_count = gpu_set[old_bucket].count;
             int remove_index = current[count].index;
-            printf("remove v: %d\n", remove_index);
+            //printf("remove v: %d\n", remove_index);
             for(int j = 0; j < old_bucket_count; j++){
                 if(gpu_set[old_bucket].v_array[j] == remove_index){
-                    printf("match v: %d, id: %d\n", remove_index, j);
+                    //printf("match v: %d, id: %d\n", remove_index, j);
                     if(j != old_bucket_count - 1)
                         gpu_set[old_bucket].v_array[j] =
                             gpu_set[old_bucket].v_array[old_bucket_count - 1];
@@ -69,19 +70,19 @@ bucket_ops(cpu::gpuResult *gpu_result, cpu::gpuSet *gpu_set, int delta){
             int new_bucket_count = gpu_set[new_bucket].count;
             gpu_set[new_bucket].v_array[new_bucket_count] = current[count].index;
             gpu_set[new_bucket].count++;
-            printf("i: %d, new b: %d, count: %d, v: %d\n", i, new_bucket,
-                    new_bucket_count, current[count].index);
+            //printf("i: %d, new b: %d, count: %d, v: %d\n", i, new_bucket,
+            //        new_bucket_count, current[count].index);
             if(gpu_set[new_bucket].count >= MAX_BUCKET_SIZE)
                 printf("bucket BOOM!\n");
             count++;
         }
-    }
+    //}
     //init
-    for(int i = 0; i < NUM_BLOCK; i++){
+    //for(int i = 0; i < NUM_BLOCK; i++){
         for(int j = 0; j < MAX_RESULT_SIZE; j++){
-            gpu_result[i * MAX_RESULT_SIZE + j].index = 0;
+            gpu_result[tid * MAX_RESULT_SIZE + j].index = 0;
         }
-    }
+    //}
 }
 
 __global__ void
@@ -180,7 +181,7 @@ if(atomicExch(&lock,1)==0){
 //if(result_count>=MAX_RESULT_SIZE)
 //	printf("OVERFLOW!!!!%d\n", result_count);
 //printf("%d %d %d\n",dest,tent_dest,tent_current+dist_current);
-printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
+//printf("GPU:%d->%d old:%d new:%d %d %d\n",gpu_vertex_buf[i],current_result_buf[now].index,current_result_buf[now].old_distance,current_result_buf[now].new_distance,now,result_count);
         }
 	}
     }

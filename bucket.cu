@@ -127,7 +127,7 @@ gettimeofday(&cpu_instance.start,NULL);
 
         verify_result<<<1,NUM_BLOCK>>>(cpu_instance.gpu_vertex,cpu_instance.gpu_used_result_buf);
         //printf("before b ops\n");
-        bucket_ops<<<1,1>>>(cpu_instance.gpu_used_result_buf,
+        bucket_ops<<<1,NUM_BLOCK>>>(cpu_instance.gpu_used_result_buf,
                 cpu_instance.gpu_used_set, cpu_instance.delta);
 gettimeofday(&cpu_instance.start_copy_back,NULL);
         //CUDA_SAFE_CALL(cudaMemcpyAsync(cpu_instance.gpu_result_buf,cpu_instance.gpu_used_result_buf,
@@ -148,8 +148,7 @@ gettimeofday(&cpu_instance.end,NULL);
 
 cpu::cpu(char* filepath, int src_p, int dest_p){
     init_memory(filepath);
-    //delta = 0x1fff;
-    delta = 10;
+    delta = 0x1fff;
     src = src_p;
     global_vertex[src].dist = 0;
     dest = dest_p;
